@@ -39,3 +39,40 @@ def preprocess_keypoints(keypoints, filter_type=None, normalize=True):
 
 
     return keypoints
+
+
+def apply_kalman_filter(keypoints):
+    """
+    Applies a Kalman filter to smooth the keypoints data.
+    The Kalman filter assumes that keypoints are a sequence of (x, y) positions.
+    
+    Args:
+        keypoints (np.ndarray): Input keypoints, shape (n_samples, n_features).
+        
+    Returns:
+        np.ndarray: Smoothed keypoints, same shape as input.
+    """
+    num_samples, num_features = keypoints.shape
+    smoothed_keypoints = np.zeros_like(keypoints)
+
+    # Kalman filter parameters
+    Q = 1e-5  # Process noise covariance
+    R = 1e-2  # Measurement noise covariance
+    P = 1.0   # Estimate error covariance
+    K = 0.0   # Kalman gain
+    x = 0.0   # State estimate
+
+    for feature_idx in range(num_features):
+        x = keypoints[0, feature_idx]  # Initialize state estimate
+        for t in range(num_samples):
+            z = keypoints[t, feature_idx]  # Measurement
+            # Prediction step
+            P = P + Q
+            # Update step
+            K = P / (P + R)
+            x = x + K * (z - x)
+            P = (1 - K) * P
+            # Store the smoothed value
+            smoothed_keypoints[t, feature_idx] = x
+    
+    return smoothed_keypoints
